@@ -8,7 +8,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd">
 
-	<flow name="opayo-implementationFlow" doc:id="c763d341-59a7-4091-830f-72610f7c459f" > 
+	<flow name="aviation-implementationFlow" doc:id="c763d341-59a7-4091-830f-72610f7c459f" > 
 		<sftp:listener doc:name="aviationFileListener" doc:id="04701c01-f855-490d-82fd-79258c1546ac" recursive="false" directory="${sftpdir.opayo.unprocessed}" moveToDirectory="#[vars.targetfolder]" config-ref="SFTP_Config" renameTo="#[(vars.dataEntityValue replace  /.a50/ with (&quot;&quot;)) ++ (now() as String {format: &quot;yyyyMMddHHmmss&quot;}) ++ '.a50']" outputMimeType='application/xlsx'>
 			<reconnect frequency="${sftp.reconnectionfrequency}" count="${sftp.reconnectionattempts}" />
 			<scheduling-strategy>
@@ -640,8 +640,10 @@ output application/json
 			</ee:variables>
 		
 </ee:transform>
-		<logger level="INFO" doc:name="Logger" doc:id="24e1208a-2b43-4e75-b20b-566784c580e3" message=":Final invoiceLineCount : #[vars.invoiceLineCount]: ::::countItem:::#[vars.countItem]::"/>
-			<!-- <raise-error doc:name="Raise error" doc:id="b27f02ef-7116-4073-93fc-d1c4698823d1" type="ANY"/> --> 
+		<sftp:write doc:name="Write" doc:id="c8452d5f-c752-463e-a5fa-39c4f4f3e0dc" config-ref="SFTP_Config" path="/DEV/Test/RyanairInvoice.xml"/>
+			<logger level="INFO" doc:name="Logger" doc:id="24e1208a-2b43-4e75-b20b-566784c580e3" message=":Final invoiceLineCount : #[vars.invoiceLineCount]: ::::countItem:::#[vars.countItem]:::::::::::FinalOutputXML:::#[payload]:"/>
+			<!-- <raise-error doc:name="Raise error" doc:id="b27f02ef-7116-4073-93fc-d1c4698823d1" type="ANY"/> -->
+			<logger level="INFO" doc:name="Logger" doc:id="a631b307-c368-4e7c-93b6-e875530b5c6c" />
 			<ee:transform doc:name="setTargetFolder" doc:id="0b59b7a4-429c-4f84-bd63-b828c8a325bd" >
 				<ee:message >
 				</ee:message>
