@@ -1,0 +1,667 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd">
+
+	<flow name="opayo-implementationFlow" doc:id="c763d341-59a7-4091-830f-72610f7c459f" > 
+		<sftp:listener doc:name="aviationFileListener" doc:id="04701c01-f855-490d-82fd-79258c1546ac" recursive="false" directory="${sftpdir.opayo.unprocessed}" moveToDirectory="#[vars.targetfolder]" config-ref="SFTP_Config" renameTo="#[(vars.dataEntityValue replace  /.a50/ with (&quot;&quot;)) ++ (now() as String {format: &quot;yyyyMMddHHmmss&quot;}) ++ '.a50']" outputMimeType='application/xlsx'>
+			<reconnect frequency="${sftp.reconnectionfrequency}" count="${sftp.reconnectionattempts}" />
+			<scheduling-strategy>
+				<fixed-frequency frequency="${frequency.opayo}" timeUnit="SECONDS" />
+			</scheduling-strategy>
+			<sftp:matcher filenamePattern="${filepattern.aviation}" />
+		</sftp:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="9f096309-bc40-443e-9831-2928e72192de" message="::Started::::::#[payload] ::"/>
+		<ee:transform doc:name="setVariables" doc:id="039e2927-c135-42d6-83d1-caa5cc59ea19" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="interfaceID"><![CDATA[%dw 2.0
+output text/plain
+---
+p('OpayoInterfaceID')]]></ee:set-variable>
+				<ee:set-variable variableName="trackingID"><![CDATA[%dw 2.0
+output text/plain
+---
+uuid()]]></ee:set-variable>
+				<ee:set-variable variableName="dataEntityName"><![CDATA[%dw 2.0
+output text/plain
+---
+'OpayoReport']]></ee:set-variable>
+				<ee:set-variable variableName="dataEntityType"><![CDATA[%dw 2.0
+output text/plain
+---
+'Alphanumeric']]></ee:set-variable>
+				<ee:set-variable variableName="dataEntityValue"><![CDATA[%dw 2.0
+output text/plain
+---
+attributes.fileName]]></ee:set-variable>
+				<ee:set-variable variableName="messageID" ><![CDATA[%dw 2.0
+output application/java
+---
+uuid()]]></ee:set-variable>
+			
+</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="logStart" doc:id="25983d95-8b9a-435e-a2ca-2487bdc499be" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;appName: app.Name,&#10;timestamp: now(),&#10;businessInterface: vars.interfaceID,&#10;flowName: flow.Name,&#10;messageId: vars.messageID,&#10;trackingId: vars.trackingID,&#10;correlationId: null,&#10;dataEntityName: vars.dataEntityName,&#10;dataEntityType: vars.dataEntityType,&#10;dataEntityValue: vars.dataEntityValue,&#10;dataSource: vars.dataSource,&#10;message: "Start of flow and message received from listener"&#10;}]' />
+		<try doc:name="Try" doc:id="aefba284-90f4-4f73-80f4-1103e182d51a" > 
+			<!-- <ee:transform doc:name="setRequest" doc:id="32ae43b1-45a7-43a3-8760-6986cc18a6b6">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0 
+import lines from dw::core::Strings output application/json 
+-&#45;&#45; 
+lines(payload)]]></ee:set-payload>
+				</ee:message>
+			</ee:transform> -->
+			<!-- <ee:transform doc:name="setRequest" doc:id="c798479c-bfbc-4847-8435-8a59c57f1242">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+fun getCustomerRef(loadNo: Number, customerRef: Number) =
+if ( customerRef matches(/([0-9]{1}$)/)) 
+loadNo
+else
+customerRef
+-&#45;&#45;
+{
+    liftingreport: payload filter ((item, index) -> item."Stockholder" == "Prax") map ((jarrow, indexofjarrow) -> 
+     {
+        "bolNumber": getCustomerRef((jarrow."Load No" replace  /"/ with ("")), (jarrow."Customer Ref" replace  /"/ with (""))),
+        "fileName": attributes.fileName,
+        "authorisationCode": jarrow."Auth Code",
+        "orderNumber": null,
+        "externalReference": null,
+        "vehicleRegistration": null,
+        "trailerNumber": null,
+        "driverName": null,
+        "haulierId": null,
+        "haulier": null,
+        "terminal": "Jarrow",
+        "stockholderId": null,
+        "stockholder": jarrow."Stockholder",
+        "clientId": null,
+        "client": null,
+        "customerId": null,
+        "customer": jarrow."Alloc Ref",
+        "loadedDate": (jarrow."Lifting Date" as LocalDateTime {format: "dd/MM/yyyy HH:mm"} as DateTime{format: "yyyy-MM-dd'T'HH:mm':00'"}),
+        "productCode": null,
+        "productName": jarrow."Product",
+        "productNatural": (jarrow."Litres" replace  /,/ with ("")) as Number,
+        "productStandard": (jarrow."Litres 15" replace  /,/ with ("")) as Number,
+        "productWeight": (jarrow."Kg in air" replace  /,/ with ("")) as Number,
+        "density": jarrow."Density in vac",
+        "temperature": jarrow."Temperature",
+        "tank": jarrow."Tank Name",
+        "dutyType": null,
+        "loadNo": jarrow."Load No",
+        "customerRef": null, 
+        "carrier": jarrow."Carrier",
+        "description": null,
+        "cust_ref_no": null,
+        "destination": jarrow."Ship To",
+        "doc_num": null,
+        "dutyPayable": null,
+        "dutyFree": null,
+        "dutyOther": null,
+        "dutyPaid": null,
+        "dutyDrawback": null,
+        "dutyStatus": jarrow."Duty Status",
+        "clientCode": null,
+        "addve_ppm": null,
+        "stoltRef": null,
+        "productWeightinVac": jarrow."Kg in vac",
+        "cardNumber": null,
+        "carrierCode":null,
+        "tractorLicence":null,
+        "naturalVolumeRefuel":null,
+        "standardVolumeRefuel":null
+    })
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform> -->
+			<!-- <http:request method="POST" doc:name="invokeSystemAPI" doc:id="db92707f-6e83-4a7b-a6c0-45f212b110ba" config-ref="HTTP_Request_configuration" path=" ${systemapi.liftingreports}" responseTimeout="${httpresponse.timeout}">
+			<reconnect frequency="${httpreconnection.frequency}" count="${httpreconnection.attempts}" />
+				<http:headers><![CDATA[#[output application/java
+-&#45;&#45;
+{
+	dataEntityName : vars.dataEntityName,
+	dataEntityValue : vars.dataEntityValue,
+	trackingID : vars.trackingID
+}]]]></http:headers>
+		</http:request> -->
+			<!-- <ee:transform doc:name="Transform Message" doc:id="f0cbbd4d-c409-4e74-bd69-42d546ced6cd" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0 
+import lines from dw::core::Strings 
+output application/json 
+-&#45;&#45; 
+payload map ((opayo, index) ->  {
+   "MessageClass4":opayo[0 to 55]
+})]]></ee:set-payload>
+				</ee:message>
+			</ee:transform> -->
+			<ee:transform doc:name="Transform Message" doc:id="78a64bb2-3992-4a59-b8b4-0a00de1b2deb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.invoiceDetails]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="invoiceHeaderDetails" ><![CDATA[%dw 2.0
+output application/json
+---
+
+	//InvoiceCreationDate: payload.RyanairDAC.H4
+	//CustomerEntityID: payload.RyanairDAC.H5
+	//payload."RyanairDAC" map ((row) -> {
+    //InvoiceCreationDate: row.H4,
+   // CustomerEntityID: row.H5
+//})
+{
+	root: {
+		(payload.invoiceHeaderDetails map ( payload01 , indexOfPayload01 ) -> {
+			row: {
+				
+				CompanyName: payload01."Company Name",
+				Address1: payload01."Address 1",
+				Address2: payload01."Address 2",
+				Address3: payload01."Address 3",
+				PostCode: payload01."Post Code",
+				Email: payload01."Email:",
+				Currency: payload01."Currency",
+				VendorId: payload01."Vendor Id",
+				AirportCode: payload01."Airport Code",
+				InvoiceNo: payload01."Invoice No:",
+				InvoiceDate: payload01."Invoice Date:",
+				AccountNumber: payload01."Account Number",
+				PaymentTermsDays: payload01."Payment terms (days)",
+				VATNo: payload01."VAT No:",
+				JET_NWE_ARA_CIF_CARGOES_MID_M_1: payload01."JET NWE ARA CIF CARGOES MID M-1",
+				FT_GBP_US_exchange_rate_M_1_mean_at: payload01."FT GBP/US exchange rate M-1 mean at",
+				BasePrice: payload01."Base Price",
+				Premium: payload01."Premium",
+				HydrantFee: payload01."Hydrant Fee",
+				ThroughputFee: payload01."Throughput Fee",
+				StorageFee: payload01."Storage Fee",
+				AttendanceFee: payload01."Attendance Fee",
+				VolumeTotalLitres: payload01."Volume Total (Litres)",
+				FuelTotal: payload01."Fuel Total",
+				USD_Litre: payload01."USD/Litre",
+				NetTotal: payload01."Net Total",
+				VAT0: payload01."VAT @ 0%",
+				VAT20: payload01."VAT @ 20%",
+				TotalInvoice: payload01."Total Invoice"
+				
+				
+				
+			}
+		})
+	}
+}]]></ee:set-variable>
+				<ee:set-variable variableName="test3" ><![CDATA[%dw 2.0
+output application/json
+---
+
+	//InvoiceCreationDate: payload.RyanairDAC.H4
+	//CustomerEntityID: payload.RyanairDAC.H5
+	//payload."RyanairDAC" map ((row) -> {
+    //InvoiceCreationDate: row.H4,
+   // CustomerEntityID: row.H5
+//})
+
+		(payload.invoiceHeaderDetails map ( payload01 , indexOfPayload01 ) -> {
+			row: {
+				
+				CompanyName: payload01."Company Name",
+				Address1: payload01."Address 1",
+				Address2: payload01."Address 2",
+				Address3: payload01."Address 3",
+				PostCode: payload01."Post Code",
+				Email: payload01."Email:",
+				Currency: payload01."Currency",
+				VendorId: payload01."Vendor Id",
+				AirportCode: payload01."Airport Code",
+				InvoiceNo: payload01."Invoice No:",
+				InvoiceDate: payload01."Invoice Date:",
+				AccountNumber: payload01."Account Number",
+				VATNo: payload01."VAT No:",
+				JET_NWE_ARA_CIF_CARGOES_MID_M_1: payload01."JET NWE ARA CIF CARGOES MID M-1",
+				FT_GBP_US_exchange_rate_M_1_mean_at: payload01."FT GBP/US exchange rate M-1 mean at",
+				BasePrice: payload01."Base Price",
+				Premium: payload01."Premium",
+				HydrantFee: payload01."Hydrant Fee",
+				ThroughputFee: payload01."Throughput Fee",
+				StorageFee: payload01."Storage Fee",
+				AttendanceFee: payload01."Attendance Fee",
+				VolumeTotalLitres: payload01."Volume Total (Litres)",
+				FuelTotal: payload01."Fuel Total",
+				USD_Litre: payload01."USD/Litre",
+				NetTotal: payload01."Net Total",
+				VAT0: payload01."VAT @ 0%",
+				VAT20: payload01."VAT @ 20%",
+				TotalInvoice: payload01."Total Invoice"
+				
+				
+			}
+		})
+	
+]]></ee:set-variable>
+				<ee:set-variable variableName="initialInvoiceDetails" ><![CDATA[%dw 2.0
+output application/json
+---
+//{
+//TransactionDetails: payload map ( transactionDetail , indexOfTransactionDetail ) -> {
+		//HealNo: transactionDetail."HEAL No",
+       // TicketNo: transactionDetail."Ticket Number"
+
+			//}
+			//}
+			payload.invoiceDetails]]></ee:set-variable>
+			</ee:variables>
+		
+</ee:transform>
+		<!-- <ee:transform doc:name="old" doc:id="a90cf943-62f4-4627-b51a-b8297f87a57d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+-&#45;&#45;
+{
+	root: {
+		(payload map ( payload01 , indexOfPayload01 ) -> {
+			row: {
+				
+				name: payload01.name,
+				company: payload01.company,
+				designation: payload01.designation,
+			}
+		})
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform> -->
+		<!-- <ee:transform doc:name="Transform Message" doc:id="21fdd015-8ae1-4132-823c-77ee01626f6a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+-&#45;&#45;
+Employee: payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform> -->
+		<ee:transform doc:name="Transform Message" doc:id="b1ef07c9-aac2-46bb-8820-694f843283fe" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="finalHeaderDetails" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+				CompanyName: vars.invoiceHeaderDetails[0].row.CompanyName,
+				Address1: vars.invoiceHeaderDetails[0].row.Address1,
+				Address2: vars.invoiceHeaderDetails[0].row.Address2,
+				Address3: vars.invoiceHeaderDetails[0].row.Address3,
+				PostCode: vars.invoiceHeaderDetails[0].row.PostCode,
+				Email: vars.invoiceHeaderDetails[0].row.Email,
+				Currency: vars.invoiceHeaderDetails[0].row.Currency,
+				VendorId: vars.invoiceHeaderDetails[0].row.VendorId,
+				AirportCode: vars.invoiceHeaderDetails[0].row.AirportCode,
+				InvoiceNo: vars.invoiceHeaderDetails[0].row.InvoiceNo,
+				InvoiceDate: vars.invoiceHeaderDetails[0].row.InvoiceDate,
+				AccountNumber: vars.invoiceHeaderDetails[0].row.AccountNumber,
+				PaymentTermsDays: vars.invoiceHeaderDetails[0].row.PaymentTermsDays,
+				VATNo: vars.invoiceHeaderDetails[0].row.VATNo,
+				JET_NWE_ARA_CIF_CARGOES_MID_M_1: vars.invoiceHeaderDetails[0].row.JET_NWE_ARA_CIF_CARGOES_MID_M_1,
+				FT_GBP_US_exchange_rate_M_1_mean_at: vars.invoiceHeaderDetails[0].row.FT_GBP_US_exchange_rate_M_1_mean_at,
+				BasePrice: vars.invoiceHeaderDetails[0].row.BasePrice,
+				Premium: vars.invoiceHeaderDetails[0].row.Premium,
+				HydrantFee: vars.invoiceHeaderDetails[0].row.HydrantFee,
+				ThroughputFee: vars.invoiceHeaderDetails[0].row.ThroughputFee,
+				StorageFee: vars.invoiceHeaderDetails[0].row.StorageFee,
+				AttendanceFee: vars.invoiceHeaderDetails[0].row.AttendanceFee,
+				VolumeTotalLitres: vars.invoiceHeaderDetails[0].row.VolumeTotalLitres,
+				FuelTotal: vars.invoiceHeaderDetails[0].row.FuelTotal,
+				USD_Litre: vars.invoiceHeaderDetails[0].row.USD_Litre,
+				NetTotal: vars.invoiceHeaderDetails[0].row.NetTotal,
+				VAT0: vars.invoiceHeaderDetails[0].row.VAT0,
+				VAT20: vars.invoiceHeaderDetails[0].row.VAT20,
+				TotalInvoice: vars.invoiceHeaderDetails[0].row.TotalInvoice
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		 <logger level="INFO" doc:name="Logger:" doc:id="04e26939-7cfd-490a-8407-dd38b6382e39" message="FirstLog*****:#[payload]::InitialInvoiceDetails:::#[vars.initialInvoiceDetails]::LastLog(((((((***and invoiceHeaderDetails ))))))))): #[vars.invoiceHeaderDetails] :))))):test3:#[vars.test3]:::::::;finalHeaderDetails))):#[vars.finalHeaderDetails]:"/> 
+		<ee:transform doc:name="Transform Message" doc:id="2b1613dd-d69a-4352-903f-35ac31f4f68c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	root: {
+		(payload map ( payload01 , indexOfPayload01 ) -> {
+			row: {
+				
+				"HEALNo": payload01."HEAL No",
+				"companyName": vars.finalHeaderDetails.CompanyName,
+    "DateofSale": payload01."Date of Sale",
+    "TicketNumber": payload01."Ticket Number",
+    "VolumeLT": payload01."Volume (LT)",
+    //"UOM": payload01."UOM",
+    "VolumeGallons": payload01."Volume (Gallons)",
+    //"UOM1": payload01."UOM",
+    "AircraftRegNo": payload01."Aircraft Reg No",
+    "FlightNumber": payload01."Flight Number",
+    "Destination": payload01."Destination",
+    "DomesticInternational": payload01."Domestic/ International",
+    "Total": payload01."Total",
+    "HydrantFee": payload01."Hydrant Fee",
+    //"UOM2": payload01."UOM",
+    "ThroughputFee": payload01."Throughput Fee",
+    //"UOM3": payload01."UOM",
+    "StorageFee": payload01."Storage Fee",
+    //"UOM4": payload01."UOM",
+    "AttendanceFee": payload01."Attendance Fee",
+    "TotalFeesApplicableGBP": payload01."Total Fees Applicable GBP",
+    "TotalFeesApplicableUSD": payload01."Total Fees Applicable USD"
+			}
+		})
+	}
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="multipleInvoiceDetails" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	root: {
+		(payload map ( payload01 , indexOfPayload01 ) -> {
+			row: {
+				
+				"HEALNo": payload01."HEAL No",
+				"companyName": vars.finalHeaderDetails.CompanyName,
+    "DateofSale": payload01."Date of Sale",
+    "TicketNumber": payload01."Ticket Number",
+    "VolumeLT": payload01."Volume (LT)",
+    "UOM": payload01."UOM",
+    "VolumeGallons": payload01."Volume (Gallons)",
+    "UOM": payload01."UOM",
+    "AircraftRegNo": payload01."Aircraft Reg No",
+    "FlightNumber": payload01."Flight Number",
+    "Destination": payload01."Destination",
+    "DomesticInternational": payload01."Domestic/ International",
+    "Total": payload01."Total",
+    "HydrantFee": payload01."Hydrant Fee",
+    "UOM": payload01."UOM",
+    "ThroughputFee": payload01."Throughput Fee",
+    "UOM": payload01."UOM",
+    "StorageFee": payload01."Storage Fee",
+    "UOM": payload01."UOM",
+    "AttendanceFee": payload01."Attendance Fee",
+    "TotalFeesApplicableGBP": payload01."Total Fees Applicable GBP",
+    "TotalFeesApplicableUSD": payload01."Total Fees Applicable USD"
+			}
+		})
+	}
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="61cd09ef-cac4-4987-bdba-f3e0308738ad" message=":output:#[payload]::"/>
+		<ee:transform doc:name="countItem" doc:id="47af4905-906d-428c-bb1b-d7a537fd3176" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+(vars.initialInvoiceDetails map ( payload01 , indexOfPayload01 ) -> {
+					InvoiceLine: {
+						ItemNumber1: indexOfPayload01 + 1 as String {format: "000000"}
+						}
+						})}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="countItem" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+(vars.initialInvoiceDetails map ( payload01 , indexOfPayload01 ) -> {
+					InvoiceLine: {
+						ItemNumber1: indexOfPayload01 + 1 as String {format: "000000"}
+						}
+						})}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="FinalXMLFormat" doc:id="77565712-7d3e-4d50-86f6-9cc6285b3b96" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::core::Periods
+output application/xml
+var SubItemPricingUnitRateJetA1 = vars.finalHeaderDetails.BasePrice as Number as String {format: "00000000000.00"}
+var SubItemPricingUnitRateHydrantFee = vars.finalHeaderDetails.HydrantFee as Number as String {format: "00000000000.000000"}
+var SubItemPricingUnitRateThroughoutPut = vars.finalHeaderDetails.ThroughputFee as Number as String {format: "00000000000.00"}
+var SubItemPricingUnitRateAttendanceFee = vars.finalHeaderDetails.AttendanceFee as Number as String {format: "00000000000.00"}
+var paymentTermsDays = vars.finalHeaderDetails.PaymentTermsDays
+
+---
+{
+	InvoiceTransmission @('xmlns:ns0': "http://www.IATA.com/IATAFuelCodeDirectory" as String,'xmlns:ns1':"http://www.IATA.com/IATABaseDataTypeDirectory" as String): {
+		InvoiceTransmissionHeader : {
+			InvoiceTransmissionId: vars.finalHeaderDetails.InvoiceDate as Date replace '-' with ''++ "0330331965550139",
+			InvoiceCreationDate: vars.finalHeaderDetails.InvoiceDate as Date ++ "T" ++ now() as String {format: "hh:m:s"},
+			Version: "IATA:FuelInvoiceV3.1.0",
+			IssuingOrganizationID: "HARVESTINFO"
+		},
+		Invoice: {
+			InvoiceHeader: {
+				CustomerEntityID: vars.finalHeaderDetails.AccountNumber as String,
+				IssuingEntityID: "16406",
+				IssuingEntityName: "Harvest Energy Aviation Ltd",
+				IssuingEntityAffiliateName: "HARVESTINFO",
+				InvoiceNumber: vars.finalHeaderDetails.InvoiceNo as Number,
+				InvoiceIssueDate: vars.finalHeaderDetails.InvoiceDate as Date,
+				InvoiceType @(InvoiceTransactionType: "FI"): "INV",
+				InvoiceDeliveryLocation: "STN" as String,
+				InvoiceDeliveryCountryCode: "GB" as String,
+				//InvoicePaymentTermsType: vars.finalHeaderDetails.PaymentTermsDays as String,
+				InvoicePaymentTermsType: paymentTermsDays as String, 
+				InvoicePaymentTermsDateBasis: "ID" as String,
+				InvoicePaymentTermsDiscountPercent: 0.000000 as String {format: "0.000000"},
+				//InvoicePaymentTermsNetDueDate: (vars.finalHeaderDetails.InvoiceDate as Date + days(vars.finalHeaderDetails.PaymentTermsDays as Number)) ++ "T00:00:00",
+				//InvoicePaymentTermsNetDueDays: vars.finalHeaderDetails.PaymentTermsDays as Number as String {format: "0000000000"},
+				//InvoicePaymentTermsDescription: "NET " ++ vars.finalHeaderDetails.PaymentTermsDays as Number as String ++" CALENDAR DAYS" as String,
+				InvoicePaymentTermsNetDueDate: (vars.finalHeaderDetails.InvoiceDate as Date + days(paymentTermsDays)) ++ "T00:00:00",
+                InvoicePaymentTermsNetDueDays: paymentTermsDays as Number as String {format: "0000000000"},
+                InvoicePaymentTermsDescription: "NET " ++ paymentTermsDays as Number as String ++" CALENDAR DAYS" as String,
+				InvoiceReferenceValue @(InvoiceReferenceType: "CTN" as String): "10324820" as String,
+				TaxInvoiceNumber: vars.finalHeaderDetails.InvoiceNo as Number,
+				InvoiceCurrencyCode: vars.finalHeaderDetails.Currency as String,
+				InvoiceTotalAmount: vars.finalHeaderDetails.TotalInvoice as Number as String {format: "0.00"},
+				InvoiceDiscountAmount: "0.00" as String
+			},			
+			SubInvoiceHeader: {
+				SubInvoiceNumber: vars.finalHeaderDetails.InvoiceNo as Number,
+				(vars.initialInvoiceDetails map ( payload01 , indexOfPayload01 ) -> {
+					InvoiceLine: {
+						ItemNumber: (indexOfPayload01 + 1)  as Number as String {format: "000000"},
+						ItemQuantity: {
+							ItemQuantityType: "DL" as String,
+							ItemQuantityFlag: "GR" as String,
+							ItemQuantityQty: payload01."Volume (LT)" as Number as String {format: "00000000000.000000"},
+							ItemQuantityUOM: "LT" as String
+						},
+						ItemDeliveryReferenceValue @(ItemDeliveryReferenceType: "FNO"): payload01."Flight Number",
+						ItemDeliveryReferenceValue @(ItemDeliveryReferenceType: "DTN"): payload01."Destination",
+                        ItemDeliveryReferenceValue @(ItemDeliveryReferenceType: "ARN"): payload01."Aircraft Reg No",
+						ItemDeliveryLocation: vars.finalHeaderDetails.AirportCode as String,
+						ItemTransportation @(ItemTransportationType: "IP"): {
+							ItemTransportationAmount: 0.00 as Number as String {format: "0.00"}
+						},
+						ItemReferenceLocalDate @(ItemReferenceDateTypes: "DTA"): vars.finalHeaderDetails.InvoiceDate as Date ++ "T" ++ now() as String {format: "hh:m:s"},
+						ItemInvoiceAmount: payload01."Total Value Including Fees (USD)" as Number as String {format: "0.00"},
+						SubItem: {  
+							SubItemProduct: {    
+								SubItemProductID @(SubItemProductIDQualifier: "PRDT"): "Jet A1",
+								SubItemDescription: "Jet A1",
+								SubItemPricingUnitRateType: "UR",
+								SubItemPricingUnitRate: SubItemPricingUnitRateJetA1 as Number as String {format: "00000000000.000000"},
+								SubItemPricingUOM: "USG",
+								SubItemPricingUOMFactor: 100 as Number as String {format: "00000000000.000000"},
+								SubItemPricingCurrencyCode: "USD",
+								SubItemPricingAmount: payload01.Total as String {format: "0.00"},
+								SubItemCurrencyConversion: {
+									ConversionMechanism: "M" ,
+									CurrencyFrom @(FactorFrom: "1"): "USD",
+									CurrencyTo @(FactorTo: "1"): "USD",
+									ExchangeRate: 1 as Number as String {format: "00000000000.000000"}  
+								},
+								SubItemInvoiceUOM: "USG",
+								SubItemInvoiceUOMFactor: 331.000000 as Number as String {format: "00000000000.000000"},
+								SubItemQuantity: {
+									SubItemInvoiceQuantity: (payload01."Volume (Gallons)" as Number as String {format: "00000000000.00"})  as Number as String {format: "00000000000.000000"},
+									SubItemQuantityType: "IN",
+									SubItemQuantityFlag: "GR"
+								},
+								SubItemInvoiceUnitRate: (vars.finalHeaderDetails.BasePrice as Number as String {format: "00000000000.00"}) as Number as String {format: "00000000000.000000"},
+								SubItemInvoiceAmount: payload01."Volume (Gallons)" as String {format: "0.00"}
+								},								 					
+							SubItemProduct: {
+								SubItemProductID @(SubItemProductIDQualifier: "FEE"): "Hydrant Fee",
+								SubItemDescription: "Hydrant Fee",
+								SubItemPricingUnitRateType: "UR",
+								SubItemPricingUnitRate: SubItemPricingUnitRateHydrantFee as Number as String {format: "00000000000.000000"},
+								SubItemPricingUOM: "LT",
+								SubItemPricingUOMFactor: 1000 as Number as String {format: "00000000000.000000"},
+								SubItemPricingCurrencyCode: "USD",
+								SubItemPricingAmount: payload01."Hydrant Fee" as String {format: "0.00"},
+								SubItemCurrencyConversion: {
+									ConversionMechanism: "M" ,
+									CurrencyFrom @(FactorFrom: "1"): "GBP",
+									CurrencyTo @(FactorTo: "1"): "USD",
+									ExchangeRate: vars.finalHeaderDetails.FT_GBP_US_exchange_rate_M_1_mean_at as Number as String {format: "00000000000.000000"}  
+								}, 
+								SubItemInvoiceUOM: "LT",
+								SubItemInvoiceUOMFactor: 1000 as Number as String {format: "00000000000.000000"},
+								SubItemQuantity: {
+									SubItemInvoiceQuantity: payload01."Volume (LT)" as String {format: "00000000000.000000"},
+									SubItemQuantityType: "DL",
+									SubItemQuantityFlag: "GR"
+								},
+								SubItemInvoiceUnitRate: (payload01."Hydrant Fee" as String {format: "00000000000.00"}) as Number as String {format: "00000000000.000000"},
+								SubItemInvoiceAmount: payload01."Hydrant Fee" as String {format: "0.00"}
+								},
+								SubItemProduct: {
+								SubItemProductID @(SubItemProductIDQualifier: "FEE"): "Throughput Fee",
+								SubItemDescription: "Throughput Fee",
+								SubItemPricingUnitRateType: "UR",
+								SubItemPricingUnitRate: SubItemPricingUnitRateThroughoutPut as Number as String {format: "00000000000.000000"},
+								SubItemPricingUOM: "LT",
+								SubItemPricingUOMFactor: 1000.000000 as Number as String {format: "00000000000.000000"},
+								SubItemPricingCurrencyCode: "USD",
+								SubItemPricingAmount: payload01."Throughput Fee" as String {format: "0.00"},
+								SubItemCurrencyConversion: {
+									ConversionMechanism: "M" ,
+									CurrencyFrom @(FactorFrom: "1"): "GBP",
+									CurrencyTo @(FactorTo: "1"): "USD",
+									ExchangeRate: vars.finalHeaderDetails.FT_GBP_US_exchange_rate_M_1_mean_at as Number as String {format: "00000000000.000000"}  
+								},
+								SubItemInvoiceUOM: "LT",
+								SubItemInvoiceUOMFactor: 1000.000000 as Number as String {format: "00000000000.000000"},
+								SubItemQuantity: {
+									SubItemInvoiceQuantity: payload01."Volume (LT)" as String {format: "00000000000.000000"},
+									SubItemQuantityType: "DL",
+									SubItemQuantityFlag: "GR"
+								},
+								SubItemInvoiceUnitRate: (payload01."Throughput Fee" as String {format: "00000000000.000000"}),
+								SubItemInvoiceAmount: payload01."Throughput Fee" as String {format: "0.00"}
+								},   
+								SubItemProduct: {
+								SubItemProductID @(SubItemProductIDQualifier: "FEE"): "Attendance Fee",
+								SubItemDescription: "Attendance Fee",
+								SubItemPricingUnitRateType: "FF",
+								SubItemPricingUnitRate: SubItemPricingUnitRateAttendanceFee as Number as String {format: "00000000000.000000"},
+								SubItemPricingUOM: "EA",
+								SubItemPricingUOMFactor: 1.000000 as Number as String {format: "00000000000.000000"},
+								SubItemPricingCurrencyCode: "USD",
+								SubItemPricingAmount: payload01."Attendance Fee" as String {format: "0.00"},
+								SubItemCurrencyConversion: {
+									ConversionMechanism: "M" ,
+									CurrencyFrom @(FactorFrom: "1"): "GBP",
+									CurrencyTo @(FactorTo: "1"): "USD",
+									ExchangeRate: vars.finalHeaderDetails.FT_GBP_US_exchange_rate_M_1_mean_at as Number as String {format: "00000000000.000000"}  
+								},
+								SubItemInvoiceUOM: "EA",
+								SubItemInvoiceUOMFactor: 1.000000 as Number as String {format: "00000000000.000000"},
+								SubItemQuantity: {
+									SubItemInvoiceQuantity: payload01."Volume (LT)" as String {format: "00000000000.000000"},
+									SubItemQuantityType: "IN",
+									SubItemQuantityFlag: "GR"
+								},
+								SubItemInvoiceUnitRate: payload01."Attendance Fee" as String {format: "00000000000.000000"},
+								SubItemInvoiceAmount: payload01."Attendance Fee" as String {format: "0.00"}
+								}
+								}
+								
+						
+					}
+				})  
+				
+			},
+			InvoiceSummary:
+			{
+			 InvoiceLineCount: sizeOf(payload) as String {format: "000000000000000000"},
+			 TotalInvoiceLineAmount: vars.finalHeaderDetails.TotalInvoice as Number as String {format: "0.00"},
+			 TotalInvoiceTaxAmount: vars.finalHeaderDetails.VAT20 as Number as String {format: "0.00"}
+			},
+			
+		},
+		InvoiceTransmissionSmry:
+		{
+		InvoiceMessageCount: 1 as Number
+		}
+	}
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="invoiceLineCount" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+(vars.initialInvoiceDetails map ( payload01 , indexOfPayload01 ) -> {
+					InvoiceLine: {
+						ItemNumber1: indexOfPayload01 + 1 as String {format: "000000"}
+						}
+						})}]]></ee:set-variable>
+			</ee:variables>
+		
+</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="24e1208a-2b43-4e75-b20b-566784c580e3" message=":Final invoiceLineCount : #[vars.invoiceLineCount]: ::::countItem:::#[vars.countItem]::"/>
+			<!-- <raise-error doc:name="Raise error" doc:id="b27f02ef-7116-4073-93fc-d1c4698823d1" type="ANY"/> --> 
+			<ee:transform doc:name="setTargetFolder" doc:id="0b59b7a4-429c-4f84-bd63-b828c8a325bd" >
+				<ee:message >
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="targetfolder" ><![CDATA[p('sftpdir.opayo.processed')]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="f59a6bac-d23c-4b92-ae65-2993346ceec5" >
+					<ee:transform doc:name="setTargetFolder" doc:id="9de00915-52f9-41e5-b2e7-6f9751f9c6ba" >
+						<ee:message >
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="targetfolder" ><![CDATA[p('sftpdir.opayo.error')]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<logger level="INFO" doc:name="endLog" doc:id="50fae14a-a53f-4bf9-9ba5-01d6c79ec132" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;appName: app.Name,&#10;timestamp: now(),&#10;businessInterface: vars.interfaceID,&#10;flowName: flow.Name,&#10;messageId: vars.messageID,&#10;trackingId: vars.trackingID,&#10;correlationId: null,&#10;dataEntityName: vars.dataEntityName,&#10;dataEntityType: vars.dataEntityType,&#10;dataEntityValue: vars.dataEntityValue,&#10;dataSource: vars.dataSource,&#10;message: "End of flow and data set to caller successfully"&#10;}]'/>
+		<error-handler ref="global-exceptionError_Handler" />
+	</flow>
+</mule>
