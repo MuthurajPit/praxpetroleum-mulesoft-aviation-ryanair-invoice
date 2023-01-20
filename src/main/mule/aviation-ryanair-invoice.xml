@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp" xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
-	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
-http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd">
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
 
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="231eb9e4-746b-4cd3-874a-c74dc60161c7" >
+		<email:smtp-connection host="SOWEYLX06.sol.local"/>
+	</email:smtp-config>
 	<flow name="aviation-implementationFlow" doc:id="c763d341-59a7-4091-830f-72610f7c459f" > 
 		<sftp:listener doc:name="aviationFileListener" doc:id="04701c01-f855-490d-82fd-79258c1546ac" recursive="false" directory="${sftpdir.opayo.unprocessed}" moveToDirectory="#[vars.targetfolder]" config-ref="SFTP_Config" renameTo="#[(vars.dataEntityValue replace  /.a50/ with (&quot;&quot;)) ++ (now() as String {format: &quot;yyyyMMddHHmmss&quot;}) ++ '.a50']" outputMimeType='application/xlsx'>
 			<reconnect frequency="${sftp.reconnectionfrequency}" count="${sftp.reconnectionattempts}" />
@@ -194,6 +198,9 @@ output application/json
 				ThroughputFee: payload01."Throughput Fee",
 				StorageFee: payload01."Storage Fee",
 				AttendanceFee: payload01."Attendance Fee",
+				HydrantFeeUSD: payload01."Hydrant Fee (USD)",
+				ThroughPutFeeUSD: payload01."ThroughPut Fee (USD)",
+				StorageFeeUSD: payload01."Storage Fee (USD)",
 				VolumeTotalLitres: payload01."Volume Total (Litres)",
 				FuelTotal: payload01."Fuel Total",
 				USD_Litre: payload01."USD/Litre",
@@ -327,6 +334,9 @@ output application/json
 				ThroughputFee: vars.invoiceHeaderDetails[0].row.ThroughputFee,
 				StorageFee: vars.invoiceHeaderDetails[0].row.StorageFee,
 				AttendanceFee: vars.invoiceHeaderDetails[0].row.AttendanceFee,
+				HydrantFeeUSD: vars.invoiceHeaderDetails[0].row.HydrantFeeUSD,
+				ThroughPutFeeUSD: vars.invoiceHeaderDetails[0].row.ThroughPutFeeUSD,
+				StorageFeeUSD: vars.invoiceHeaderDetails[0].row.StorageFeeUSD,				
 				VolumeTotalLitres: vars.invoiceHeaderDetails[0].row.VolumeTotalLitres,
 				FuelTotal: vars.invoiceHeaderDetails[0].row.FuelTotal,
 				USD_Litre: vars.invoiceHeaderDetails[0].row.USD_Litre,
@@ -446,6 +456,7 @@ var SubItemPricingUnitRateJetA1 = vars.finalHeaderDetails.BasePrice as Number as
 var SubItemPricingUnitRateHydrantFee = vars.finalHeaderDetails.HydrantFee as Number as String {format: "00000000000.000000"}
 var SubItemPricingUnitRateThroughoutPut = vars.finalHeaderDetails.ThroughputFee as Number as String {format: "00000000000.00"}
 var SubItemPricingUnitRateAttendanceFee = vars.finalHeaderDetails.AttendanceFee as Number as String {format: "00000000000.00"}
+var ThroughPutFeeUSD = vars.finalHeaderDetails.ThroughPutFeeUSD as Number as String {format: "00000000000.000000"}
 var paymentTermsDays = vars.finalHeaderDetails.PaymentTermsDays
 
 ---
@@ -524,7 +535,8 @@ var paymentTermsDays = vars.finalHeaderDetails.PaymentTermsDays
 									SubItemQuantityFlag: "GR"
 								},
 								SubItemInvoiceUnitRate: (vars.finalHeaderDetails.BasePrice as Number as String {format: "00000000000.00"}) as Number as String {format: "00000000000.000000"},
-								SubItemInvoiceAmount: payload01."Volume (Gallons)" as String {format: "0.00"}
+								//SubItemInvoiceAmount: payload01."Volume (Gallons)" as String {format: "0.00"}
+								SubItemInvoiceAmount: payload01.Total as String {format: "0.00"}
 								},								 					
 							SubItemProduct: {
 								SubItemProductID @(SubItemProductIDQualifier: "FEE"): "Hydrant Fee",
@@ -533,7 +545,7 @@ var paymentTermsDays = vars.finalHeaderDetails.PaymentTermsDays
 								SubItemPricingUnitRate: SubItemPricingUnitRateHydrantFee as Number as String {format: "00000000000.000000"},
 								SubItemPricingUOM: "LT",
 								SubItemPricingUOMFactor: 1000 as Number as String {format: "00000000000.000000"},
-								SubItemPricingCurrencyCode: "USD",
+								SubItemPricingCurrencyCode: "GBP",
 								SubItemPricingAmount: payload01."Hydrant Fee" as String {format: "0.00"},
 								SubItemCurrencyConversion: {
 									ConversionMechanism: "M" ,
@@ -548,8 +560,9 @@ var paymentTermsDays = vars.finalHeaderDetails.PaymentTermsDays
 									SubItemQuantityType: "DL",
 									SubItemQuantityFlag: "GR"
 								},
-								SubItemInvoiceUnitRate: (payload01."Hydrant Fee" as String {format: "00000000000.00"}) as Number as String {format: "00000000000.000000"},
-								SubItemInvoiceAmount: payload01."Hydrant Fee" as String {format: "0.00"}
+								//SubItemInvoiceUnitRate: (payload01."Hydrant Fee" as String {format: "00000000000.00"}) as Number as String {format: "00000000000.000000"},
+								SubItemInvoiceUnitRate: vars.finalHeaderDetails.HydrantFeeUSD as Number as String {format: "00000000000.000000"},
+								SubItemInvoiceAmount: payload01."Hydrant Fee Totals (USD)" as String {format: "0.00"}
 								},
 								SubItemProduct: {
 								SubItemProductID @(SubItemProductIDQualifier: "FEE"): "Throughput Fee",
@@ -558,7 +571,7 @@ var paymentTermsDays = vars.finalHeaderDetails.PaymentTermsDays
 								SubItemPricingUnitRate: SubItemPricingUnitRateThroughoutPut as Number as String {format: "00000000000.000000"},
 								SubItemPricingUOM: "LT",
 								SubItemPricingUOMFactor: 1000.000000 as Number as String {format: "00000000000.000000"},
-								SubItemPricingCurrencyCode: "USD",
+								SubItemPricingCurrencyCode: "GBP",
 								SubItemPricingAmount: payload01."Throughput Fee" as String {format: "0.00"},
 								SubItemCurrencyConversion: {
 									ConversionMechanism: "M" ,
@@ -573,8 +586,9 @@ var paymentTermsDays = vars.finalHeaderDetails.PaymentTermsDays
 									SubItemQuantityType: "DL",
 									SubItemQuantityFlag: "GR"
 								},
-								SubItemInvoiceUnitRate: (payload01."Throughput Fee" as String {format: "00000000000.000000"}),
-								SubItemInvoiceAmount: payload01."Throughput Fee" as String {format: "0.00"}
+								//SubItemInvoiceUnitRate: (payload01."Throughput Fee" as String {format: "00000000000.000000"}),
+								SubItemInvoiceUnitRate: ThroughPutFeeUSD as Number as String {format: "00000000000.000000"},
+								SubItemInvoiceAmount: payload01."Throughput Fee Totals (USD)" as String {format: "0.00"}
 								},   
 								SubItemProduct: {
 								SubItemProductID @(SubItemProductIDQualifier: "FEE"): "Attendance Fee",
@@ -583,7 +597,7 @@ var paymentTermsDays = vars.finalHeaderDetails.PaymentTermsDays
 								SubItemPricingUnitRate: SubItemPricingUnitRateAttendanceFee as Number as String {format: "00000000000.000000"},
 								SubItemPricingUOM: "EA",
 								SubItemPricingUOMFactor: 1.000000 as Number as String {format: "00000000000.000000"},
-								SubItemPricingCurrencyCode: "USD",
+								SubItemPricingCurrencyCode: "GBP",
 								SubItemPricingAmount: payload01."Attendance Fee" as String {format: "0.00"},
 								SubItemCurrencyConversion: {
 									ConversionMechanism: "M" ,
@@ -594,12 +608,15 @@ var paymentTermsDays = vars.finalHeaderDetails.PaymentTermsDays
 								SubItemInvoiceUOM: "EA",
 								SubItemInvoiceUOMFactor: 1.000000 as Number as String {format: "00000000000.000000"},
 								SubItemQuantity: {
-									SubItemInvoiceQuantity: payload01."Volume (LT)" as String {format: "00000000000.000000"},
+									//SubItemInvoiceQuantity: payload01."Volume (LT)" as String {format: "00000000000.000000"},
+									SubItemInvoiceQuantity: 1.000000 as Number as String {format: "00000000000.000000"},
 									SubItemQuantityType: "IN",
 									SubItemQuantityFlag: "GR"
 								},
-								SubItemInvoiceUnitRate: payload01."Attendance Fee" as String {format: "00000000000.000000"},
-								SubItemInvoiceAmount: payload01."Attendance Fee" as String {format: "0.00"}
+								//SubItemInvoiceUnitRate: payload01."Attendance Fee" as String {format: "00000000000.000000"},
+								//(payload01."Attendance Fee Totals (USD)" as String {format: "00000000000.00"}) as Number as String {format: "00000000000.000000"}
+								SubItemInvoiceUnitRate: (payload01."Attendance Fee Totals (USD)" as String {format: "00000000000.00"}) as Number as String {format: "00000000000.000000"},
+								SubItemInvoiceAmount: payload01."Attendance Fee Totals (USD)" as String {format: "0.00"}
 								}
 								}
 								
@@ -637,6 +654,14 @@ output application/json
 		
 </ee:transform>
 		<sftp:write doc:name="Write" doc:id="c8452d5f-c752-463e-a5fa-39c4f4f3e0dc" config-ref="SFTP_Config" path="/DEV/Test/RyanairInvoice.xml"/>
+			<email:send doc:name="Send" doc:id="eb0d9478-f0e3-42d9-8c0f-d9d7719b5e79" config-ref="Email_SMTP" fromAddress="Muthuraj.Pitchaiah@external.prax.com" subject="Aviation-Ryanair Invoice">
+				<email:to-addresses >
+					<email:to-address value="Muthuraj.Pitchaiah@external.prax.com" />
+				</email:to-addresses>
+				<email:attachments ><![CDATA[#[{
+	"Aviation-Ryanair Invoice File": payload
+}]]]></email:attachments>
+			</email:send>
 			<logger level="INFO" doc:name="Logger" doc:id="24e1208a-2b43-4e75-b20b-566784c580e3" message=":Final invoiceLineCount : #[vars.invoiceLineCount]: ::::countItem:::#[vars.countItem]:::::::::::FinalOutputXML:::#[payload]:"/>
 			<!-- <raise-error doc:name="Raise error" doc:id="b27f02ef-7116-4073-93fc-d1c4698823d1" type="ANY"/> -->
 			<logger level="INFO" doc:name="Logger" doc:id="a631b307-c368-4e7c-93b6-e875530b5c6c" />

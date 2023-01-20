@@ -16,8 +16,10 @@ salesforcesapibasicAuth:
  password: "![g9ddMHdv7IoYM/Y+dJs2C7zTyuqu9Xq8lu4ntNtQPdk=]"
  
 sftp:
- username: "![lbooycwAgDx17IwyvP/Mrg==]"
- password: "![+fhyfZP5+kxppBPhMzQF9A==]"
+ username: "Aviation_SFTP"
+ password: "4lzmQJgvc52!w^bXuY" 
+ usernameold: "![lbooycwAgDx17IwyvP/Mrg==]"
+ passwordold: "![+fhyfZP5+kxppBPhMzQF9A==]"
  
 salesforce:
  systemuser: "![2HvFbvV+4i49lzsmIC9MlyWvhn83YyIycJrbq1P/bTlism9XAF7a/ZFioVTQ1G+E]"
