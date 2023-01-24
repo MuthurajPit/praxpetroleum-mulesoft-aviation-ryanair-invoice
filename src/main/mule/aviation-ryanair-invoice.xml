@@ -57,6 +57,7 @@ uuid()]]></ee:set-variable>
 </ee:variables>
 		</ee:transform>
 		<logger level="INFO" doc:name="logStart" doc:id="25983d95-8b9a-435e-a2ca-2487bdc499be" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;appName: app.Name,&#10;timestamp: now(),&#10;businessInterface: vars.interfaceID,&#10;flowName: flow.Name,&#10;messageId: vars.messageID,&#10;trackingId: vars.trackingID,&#10;correlationId: null,&#10;dataEntityName: vars.dataEntityName,&#10;dataEntityType: vars.dataEntityType,&#10;dataEntityValue: vars.dataEntityValue,&#10;dataSource: vars.dataSource,&#10;message: "Start of flow and message received from listener"&#10;}]' />
+		<logger level="INFO" doc:name="Logger" doc:id="47bb9c2d-e0bd-4c92-87b9-b3b2e0d87f2e" message=":::::dataEntityValue:::#[vars.dataEntityValue]"/>
 		<try doc:name="Try" doc:id="aefba284-90f4-4f73-80f4-1103e182d51a" > 
 			<!-- <ee:transform doc:name="setRequest" doc:id="32ae43b1-45a7-43a3-8760-6986cc18a6b6">
 				<ee:message>
@@ -347,7 +348,7 @@ output application/json
 }]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		 <logger level="INFO" doc:name="Logger:" doc:id="04e26939-7cfd-490a-8407-dd38b6382e39" message="FirstLog*****:#[payload]::InitialInvoiceDetails:::#[vars.initialInvoiceDetails]::LastLog(((((((***and invoiceHeaderDetails ))))))))): #[vars.invoiceHeaderDetails] :))))):test3:#[vars.test3]:::::::;finalHeaderDetails))):#[vars.finalHeaderDetails]:"/> 
+		 <logger level="INFO" doc:name="Logger:" doc:id="04e26939-7cfd-490a-8407-dd38b6382e39" message="FirstLog*dataEntityValue*#[vars.dataEntityValue]***:#[payload]::InitialInvoiceDetails:::#[vars.initialInvoiceDetails]::LastLog(((((((***and invoiceHeaderDetails ))))))))): #[vars.invoiceHeaderDetails] :))))):test3:#[vars.test3]:::::::;finalHeaderDetails))):#[vars.finalHeaderDetails]:"/> 
 		<ee:transform doc:name="Transform Message" doc:id="2b1613dd-d69a-4352-903f-35ac31f4f68c" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
@@ -534,7 +535,7 @@ var paymentTermsDays = vars.finalHeaderDetails.PaymentTermsDays
 									SubItemQuantityType: "IN",
 									SubItemQuantityFlag: "GR"
 								},
-								SubItemInvoiceUnitRate: (vars.finalHeaderDetails.BasePrice as Number as String {format: "00000000000.00"}) as Number as String {format: "00000000000.000000"},
+								SubItemInvoiceUnitRate: vars.finalHeaderDetails.BasePrice as Number as String {format: "00000000000.000000"},
 								//SubItemInvoiceAmount: payload01."Volume (Gallons)" as String {format: "0.00"}
 								SubItemInvoiceAmount: payload01.Total as String {format: "0.00"}
 								},								 					
@@ -659,12 +660,12 @@ output application/json
 					<email:to-address value="Muthuraj.Pitchaiah@external.prax.com" />
 				</email:to-addresses>
 				<email:attachments ><![CDATA[#[{
-	"Aviation-Ryanair Invoice File": payload
+	"Aviation-Ryanair Invoice" : payload
 }]]]></email:attachments>
 			</email:send>
 			<logger level="INFO" doc:name="Logger" doc:id="24e1208a-2b43-4e75-b20b-566784c580e3" message=":Final invoiceLineCount : #[vars.invoiceLineCount]: ::::countItem:::#[vars.countItem]:::::::::::FinalOutputXML:::#[payload]:"/>
 			<!-- <raise-error doc:name="Raise error" doc:id="b27f02ef-7116-4073-93fc-d1c4698823d1" type="ANY"/> -->
-			<logger level="INFO" doc:name="Logger" doc:id="a631b307-c368-4e7c-93b6-e875530b5c6c" />
+			<logger level="INFO" doc:name="Logger" doc:id="a631b307-c368-4e7c-93b6-e875530b5c6c" message="::::last:::dataEntityValue:::#[vars.dataEntityValue]"/>
 			<ee:transform doc:name="setTargetFolder" doc:id="0b59b7a4-429c-4f84-bd63-b828c8a325bd" >
 				<ee:message >
 				</ee:message>
