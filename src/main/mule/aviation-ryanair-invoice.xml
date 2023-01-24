@@ -655,13 +655,10 @@ output application/json
 		
 </ee:transform>
 		<sftp:write doc:name="Write" doc:id="c8452d5f-c752-463e-a5fa-39c4f4f3e0dc" config-ref="SFTP_Config" path="/DEV/Test/RyanairInvoice.xml"/>
-			<email:send doc:name="Send" doc:id="eb0d9478-f0e3-42d9-8c0f-d9d7719b5e79" config-ref="Email_SMTP" fromAddress="Muthuraj.Pitchaiah@external.prax.com" subject="Aviation-Ryanair Invoice">
+			<email:send doc:name="Send" doc:id="eb0d9478-f0e3-42d9-8c0f-d9d7719b5e79" config-ref="Email_SMTP" fromAddress="Muthuraj.Pitchaiah@external.prax.com" subject="#[vars.dataEntityValue]">
 				<email:to-addresses >
 					<email:to-address value="Muthuraj.Pitchaiah@external.prax.com" />
 				</email:to-addresses>
-				<email:attachments ><![CDATA[#[{
-	"Aviation-Ryanair Invoice" : payload
-}]]]></email:attachments>
 			</email:send>
 			<logger level="INFO" doc:name="Logger" doc:id="24e1208a-2b43-4e75-b20b-566784c580e3" message=":Final invoiceLineCount : #[vars.invoiceLineCount]: ::::countItem:::#[vars.countItem]:::::::::::FinalOutputXML:::#[payload]:"/>
 			<!-- <raise-error doc:name="Raise error" doc:id="b27f02ef-7116-4073-93fc-d1c4698823d1" type="ANY"/> -->
