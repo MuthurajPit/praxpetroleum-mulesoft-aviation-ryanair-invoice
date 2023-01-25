@@ -20,7 +20,6 @@ http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/em
 			</scheduling-strategy>
 			<sftp:matcher filenamePattern="${filepattern.aviation}" />
 		</sftp:listener>
-		<logger level="INFO" doc:name="Logger" doc:id="9f096309-bc40-443e-9831-2928e72192de" message="::Started::::::#[payload] ::"/>
 		<set-variable value="#[payload]" doc:name="origianalFile" doc:id="bca73f7b-ee10-4b70-9fb5-2f5d190f161f" variableName="origianalFile"/>
 		<ee:transform doc:name="setVariables" doc:id="039e2927-c135-42d6-83d1-caa5cc59ea19" >
 			<ee:message >
@@ -58,7 +57,6 @@ uuid()]]></ee:set-variable>
 </ee:variables>
 		</ee:transform>
 		<logger level="INFO" doc:name="logStart" doc:id="25983d95-8b9a-435e-a2ca-2487bdc499be" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;appName: app.Name,&#10;timestamp: now(),&#10;businessInterface: vars.interfaceID,&#10;flowName: flow.Name,&#10;messageId: vars.messageID,&#10;trackingId: vars.trackingID,&#10;correlationId: null,&#10;dataEntityName: vars.dataEntityName,&#10;dataEntityType: vars.dataEntityType,&#10;dataEntityValue: vars.dataEntityValue,&#10;dataSource: vars.dataSource,&#10;message: "Start of flow and message received from listener"&#10;}]' />
-		<logger level="INFO" doc:name="Logger" doc:id="47bb9c2d-e0bd-4c92-87b9-b3b2e0d87f2e" message=":::::dataEntityValue:::#[vars.dataEntityValue]"/>
 		<try doc:name="Try" doc:id="aefba284-90f4-4f73-80f4-1103e182d51a" > 
 			<!-- <ee:transform doc:name="setRequest" doc:id="32ae43b1-45a7-43a3-8760-6986cc18a6b6">
 				<ee:message>
@@ -155,7 +153,10 @@ payload map ((opayo, index) ->  {
 })]]></ee:set-payload>
 				</ee:message>
 			</ee:transform> -->
-			<ee:transform doc:name="Transform Message" doc:id="78a64bb2-3992-4a59-b8b4-0a00de1b2deb" >
+			<async doc:name="Async" doc:id="42321177-6e39-460f-a20a-9ae9127c7a91">
+			<flow-ref doc:name="callPayloadLoggerStartFlow" doc:id="3e01a252-736d-4e18-9e08-ddda9c9e523e" name="payloadLoggerStartFlow" />
+		</async>
+			<ee:transform doc:name="invoiceDetails" doc:id="78a64bb2-3992-4a59-b8b4-0a00de1b2deb" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -306,7 +307,7 @@ output application/xml
 Employee: payload]]></ee:set-payload>
 			</ee:message>
 		</ee:transform> -->
-		<ee:transform doc:name="Transform Message" doc:id="b1ef07c9-aac2-46bb-8820-694f843283fe" >
+		<ee:transform doc:name="invoiceHeaderDetails" doc:id="b1ef07c9-aac2-46bb-8820-694f843283fe" >
 			<ee:message >
 			</ee:message>
 			<ee:variables >
@@ -348,9 +349,8 @@ output application/json
 				TotalInvoice: vars.invoiceHeaderDetails[0].row.TotalInvoice
 }]]></ee:set-variable>
 			</ee:variables>
-		</ee:transform>
-		 <logger level="INFO" doc:name="Logger:" doc:id="04e26939-7cfd-490a-8407-dd38b6382e39" message="FirstLog*dataEntityValue*#[vars.dataEntityValue]***:#[payload]::InitialInvoiceDetails:::#[vars.initialInvoiceDetails]::LastLog(((((((***and invoiceHeaderDetails ))))))))): #[vars.invoiceHeaderDetails] :))))):test3:#[vars.test3]:::::::;finalHeaderDetails))):#[vars.finalHeaderDetails]:"/> 
-		<ee:transform doc:name="Transform Message" doc:id="2b1613dd-d69a-4352-903f-35ac31f4f68c" >
+		</ee:transform> 
+		<ee:transform doc:name="iterateInvoiceHeaderDetails" doc:id="2b1613dd-d69a-4352-903f-35ac31f4f68c" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -424,8 +424,7 @@ output application/json
 }]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		<logger level="INFO" doc:name="Logger" doc:id="61cd09ef-cac4-4987-bdba-f3e0308738ad" message=":output:#[payload]::"/>
-		<ee:transform doc:name="countItem" doc:id="47af4905-906d-428c-bb1b-d7a537fd3176" >
+		<ee:transform doc:name="countInvoiceLineItem" doc:id="47af4905-906d-428c-bb1b-d7a537fd3176" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -449,7 +448,7 @@ output application/json
 						})}]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		<ee:transform doc:name="FinalXMLFormat" doc:id="77565712-7d3e-4d50-86f6-9cc6285b3b96" >
+		<ee:transform doc:name="finalInvoiceXMLMapping" doc:id="77565712-7d3e-4d50-86f6-9cc6285b3b96" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 import * from dw::core::Periods
@@ -678,7 +677,7 @@ output application/json
 ]]></ee:set-variable>
 				</ee:variables>
 			</ee:transform> -->
-			<email:send doc:name="Send" doc:id="eb0d9478-f0e3-42d9-8c0f-d9d7719b5e79" config-ref="Email_SMTP" fromAddress="Muthuraj.Pitchaiah@external.prax.com" subject="#[vars.dataEntityValue]">
+			<email:send doc:name="sendEmail" doc:id="eb0d9478-f0e3-42d9-8c0f-d9d7719b5e79" config-ref="Email_SMTP" fromAddress="Muthuraj.Pitchaiah@external.prax.com" subject="#[vars.dataEntityValue]">
 				<email:to-addresses >
 					<email:to-address value="Muthuraj.Pitchaiah@external.prax.com" />
 				</email:to-addresses>
@@ -689,9 +688,10 @@ output application/json
 (vars.dataEntityValue):vars.origianalFile	
 }]]]></email:attachments>
 			</email:send>
-			<logger level="INFO" doc:name="Logger" doc:id="24e1208a-2b43-4e75-b20b-566784c580e3" message=":Final invoiceLineCount : #[vars.invoiceLineCount]: ::::countItem:::#[vars.countItem]:::::::::::FinalOutputXML:::#[payload]:"/>
 			<!-- <raise-error doc:name="Raise error" doc:id="b27f02ef-7116-4073-93fc-d1c4698823d1" type="ANY"/> -->
-			<logger level="INFO" doc:name="Logger" doc:id="a631b307-c368-4e7c-93b6-e875530b5c6c" message="::::last:::dataEntityValue:::#[vars.dataEntityValue]"/>
+			<async doc:name="Async" doc:id="da4f7118-5a63-4160-b3f5-30ec9172e35a">
+			<flow-ref doc:name="callPayloadLoggerEndFlow" doc:id="ed03df28-c073-40e8-a672-92d2273fe05b" name="payloadLoggerEndFlow" />
+		</async>
 			<ee:transform doc:name="setTargetFolder" doc:id="0b59b7a4-429c-4f84-bd63-b828c8a325bd" >
 				<ee:message >
 				</ee:message>
