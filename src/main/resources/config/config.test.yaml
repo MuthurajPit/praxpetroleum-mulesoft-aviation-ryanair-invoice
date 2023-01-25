@@ -54,7 +54,7 @@ import_filepattern:
   
 filepattern:
   opayo: "TotalTest*.a50"
-  aviation: "Ryanair*.xlsx"
+  aviation: "*.xlsx"
                   
 frequency:
   opayo: "30"

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="new-test-suite.xml" />
+	<munit:test name="new-test-suite-aviation-implementationFlowTest" doc:id="23472678-9156-4b3b-af79-b2cc022f5635" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="mockPayLoadLoggerDB" doc:id="8e1dd55f-12c7-4485-8449-cd92415e2b86" processor="db:insert">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="b5ba4817-529b-4dd5-9bf3-ec76397248f2" attributeName="doc:id" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="sendEmail" doc:id="4cc41846-1b98-456d-abdc-f0ac741f07a8" processor="email:send">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="eb0d9478-f0e3-42d9-8c0f-d9d7719b5e79" attributeName="doc:id" />
+					<munit-tools:with-attribute whereValue="Email_SMTP" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<set-payload value="#[readUrl('classpath://aviation/ryanair.xlsx','application/xlsx')]" doc:name="Set Payload" doc:id="73d41f9e-0184-4f7a-9e63-602a997a5f65" />
+			<flow-ref doc:name="Flow-ref to aviation-implementationFlow" doc:id="1828394f-7351-4607-ad7e-f22b180e119e" name="aviation-implementationFlow"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:verify-call doc:name="Verify call" doc:id="e8fca88a-1ec1-4064-b402-69346666d045" processor="logger">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="endLog" attributeName="doc:name" />
+					<munit-tools:with-attribute whereValue="50fae14a-a53f-4bf9-9ba5-01d6c79ec132" attributeName="doc:id" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+		</munit:validation>
+	</munit:test>
+
+
+</mule>

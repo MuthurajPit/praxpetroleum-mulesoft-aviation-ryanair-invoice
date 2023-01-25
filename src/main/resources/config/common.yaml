@@ -38,6 +38,7 @@ ThirdPartyLiftingInterfaceID: "ThirdPartyLifting"
 ReleaseNumberInterfaceID: "ReleaseNumber"
 TradedumpLiftingInterfaceID: "TradedumpLifting"
 OpayoInterfaceID: "TotalOpayoSettlement"
+AviationInterfaceID: "AviationRyanairInvoice"
  
 
 

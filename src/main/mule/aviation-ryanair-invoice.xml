@@ -13,7 +13,7 @@ http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/em
 		<email:smtp-connection host="SOWEYLX06.sol.local"/>
 	</email:smtp-config>
 	<flow name="aviation-implementationFlow" doc:id="c763d341-59a7-4091-830f-72610f7c459f" > 
-		<sftp:listener doc:name="aviationFileListener" doc:id="04701c01-f855-490d-82fd-79258c1546ac" recursive="false" directory="${sftpdir.opayo.unprocessed}" moveToDirectory="#[vars.targetfolder]" config-ref="SFTP_Config" renameTo="#[(vars.dataEntityValue replace  /.a50/ with (&quot;&quot;)) ++ (now() as String {format: &quot;yyyyMMddHHmmss&quot;}) ++ '.a50']" outputMimeType='application/xlsx'>
+		<sftp:listener doc:name="aviationFileListener" doc:id="04701c01-f855-490d-82fd-79258c1546ac" recursive="false" directory="${sftpdir.opayo.unprocessed}" moveToDirectory="#[vars.targetfolder]" config-ref="SFTP_Config" renameTo="#[(vars.dataEntityValue replace  /.xlsx/ with (&quot;&quot;)) ++ (now() as String {format: &quot;yyyyMMddHHmmss&quot;}) ++ '.xlsx']" outputMimeType='application/xlsx'>
 			<reconnect frequency="${sftp.reconnectionfrequency}" count="${sftp.reconnectionattempts}" />
 			<scheduling-strategy>
 				<fixed-frequency frequency="${frequency.opayo}" timeUnit="SECONDS" />
@@ -21,6 +21,7 @@ http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/em
 			<sftp:matcher filenamePattern="${filepattern.aviation}" />
 		</sftp:listener>
 		<logger level="INFO" doc:name="Logger" doc:id="9f096309-bc40-443e-9831-2928e72192de" message="::Started::::::#[payload] ::"/>
+		<set-variable value="#[payload]" doc:name="origianalFile" doc:id="bca73f7b-ee10-4b70-9fb5-2f5d190f161f" variableName="origianalFile"/>
 		<ee:transform doc:name="setVariables" doc:id="039e2927-c135-42d6-83d1-caa5cc59ea19" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
@@ -32,7 +33,7 @@ payload]]></ee:set-payload>
 				<ee:set-variable variableName="interfaceID"><![CDATA[%dw 2.0
 output text/plain
 ---
-p('OpayoInterfaceID')]]></ee:set-variable>
+p('AviationInterfaceID')]]></ee:set-variable>
 				<ee:set-variable variableName="trackingID"><![CDATA[%dw 2.0
 output text/plain
 ---
@@ -40,7 +41,7 @@ uuid()]]></ee:set-variable>
 				<ee:set-variable variableName="dataEntityName"><![CDATA[%dw 2.0
 output text/plain
 ---
-'OpayoReport']]></ee:set-variable>
+'AviationRyanairInvoiceReport']]></ee:set-variable>
 				<ee:set-variable variableName="dataEntityType"><![CDATA[%dw 2.0
 output text/plain
 ---
@@ -510,7 +511,8 @@ var paymentTermsDays = vars.finalHeaderDetails.PaymentTermsDays
 						ItemTransportation @(ItemTransportationType: "IP"): {
 							ItemTransportationAmount: 0.00 as Number as String {format: "0.00"}
 						},
-						ItemReferenceLocalDate @(ItemReferenceDateTypes: "DTA"): vars.finalHeaderDetails.InvoiceDate as Date ++ "T" ++ now() as String {format: "hh:m:s"},
+						//ItemReferenceLocalDate @(ItemReferenceDateTypes: "DTA"): vars.finalHeaderDetails.InvoiceDate as Date ++ "T" ++ now() as String {format: "hh:m:s"},
+						ItemReferenceLocalDate @(ItemReferenceDateTypes: "DTA"): payload01."Date of Sale" as Date ++ "T" ++ now() as String {format: "hh:m:s"},
 						ItemInvoiceAmount: payload01."Total Value Including Fees (USD)" as Number as String {format: "0.00"},
 						SubItem: {  
 							SubItemProduct: {    
@@ -651,14 +653,41 @@ output application/json
 						ItemNumber1: indexOfPayload01 + 1 as String {format: "000000"}
 						}
 						})}]]></ee:set-variable>
+					<ee:set-variable variableName="fileNameUpdated" ><![CDATA[%dw 2.0
+import * from dw::core::Strings
+output application/json
+---
+
+ //substringBefore(vars.dataEntityValue, ".")
+ vars.dataEntityValue replace  '.xlsx' with ""]]></ee:set-variable>
 			</ee:variables>
 		
 </ee:transform>
-		<sftp:write doc:name="Write" doc:id="c8452d5f-c752-463e-a5fa-39c4f4f3e0dc" config-ref="SFTP_Config" path="/DEV/Test/RyanairInvoice.xml"/>
+		<!-- <sftp:write doc:name="Write" doc:id="c8452d5f-c752-463e-a5fa-39c4f4f3e0dc" config-ref="SFTP_Config" path="/DEV/Test/RyanairInvoice.xml"/> -->
+			<!-- <ee:transform doc:name="filename" doc:id="c4e6dc99-5133-4cf1-a48b-744c9facbe8e" >
+				<ee:message >
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="fileNameUpdated" ><![CDATA[%dw 2.0
+import * from dw::core::Strings
+output application/json
+-&#45;&#45;
+
+ //substringBefore(vars.dataEntityValue, ".")
+ vars.dataEntityValue replace  '.xlsx' with ""
+]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform> -->
 			<email:send doc:name="Send" doc:id="eb0d9478-f0e3-42d9-8c0f-d9d7719b5e79" config-ref="Email_SMTP" fromAddress="Muthuraj.Pitchaiah@external.prax.com" subject="#[vars.dataEntityValue]">
 				<email:to-addresses >
 					<email:to-address value="Muthuraj.Pitchaiah@external.prax.com" />
 				</email:to-addresses>
+				<email:body contentType="text/plain" >
+					<email:content ><![CDATA[Email Content]]></email:content>
+				</email:body>
+				<email:attachments><![CDATA[#[{(vars.fileNameUpdated ++ '.xml'):payload,
+(vars.dataEntityValue):vars.origianalFile	
+}]]]></email:attachments>
 			</email:send>
 			<logger level="INFO" doc:name="Logger" doc:id="24e1208a-2b43-4e75-b20b-566784c580e3" message=":Final invoiceLineCount : #[vars.invoiceLineCount]: ::::countItem:::#[vars.countItem]:::::::::::FinalOutputXML:::#[payload]:"/>
 			<!-- <raise-error doc:name="Raise error" doc:id="b27f02ef-7116-4073-93fc-d1c4698823d1" type="ANY"/> -->
