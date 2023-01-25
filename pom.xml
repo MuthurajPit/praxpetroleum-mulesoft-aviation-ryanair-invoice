@@ -4,11 +4,11 @@
 
 	<!-- <groupId>com.mycompany</groupId> -->
 	<groupId>820cbd4e-b7da-49db-81d3-3660c23134e8</groupId>
-	<artifactId>mulesoft-aviation-ryanair-invoice</artifactId>
+	<artifactId>prx-aviation-ryanair-invoice</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>mule-application</packaging>
 
-	<name>mulesoft-aviation-ryanair-invoic</name>
+	<name>prx-aviation-ryanair-invoice</name>
 
 	<description>This integration is used to handle lifting reports</description>
 	<properties>
@@ -16,7 +16,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<munit.version>2.3.9</munit.version>
 		<app.runtime>4.4.0</app.runtime>
-		<mule.maven.plugin.version>3.5.4</mule.maven.plugin.version>
+		<mule.maven.plugin.version>3.8.0</mule.maven.plugin.version>
 		<exchange.url>https://maven.anypoint.mulesoft.com/api/v1/organizations/820cbd4e-b7da-49db-81d3-3660c23134e8/maven</exchange.url>
 	</properties>
 
