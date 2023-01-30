@@ -682,7 +682,6 @@ p('mailto') splitBy ","]]></ee:set-variable>
 			</ee:variables>
 		
 </ee:transform>
-		 <logger level="INFO" doc:name="Logger" doc:id="80a040a4-2280-463d-9f25-1ff85185c0d2" message="(((((((((()((#[vars.mailTo]))))))"/>
 			<sftp:write doc:name="Write" doc:id="c8452d5f-c752-463e-a5fa-39c4f4f3e0dc" config-ref="SFTP_Config" path="${sftpdir.aviation.xmlfile}"/> 
 			<!-- <ee:transform doc:name="filename" doc:id="c4e6dc99-5133-4cf1-a48b-744c9facbe8e" >
 				<ee:message >
