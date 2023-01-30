@@ -10,13 +10,13 @@ http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sft
 http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
 
 	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="231eb9e4-746b-4cd3-874a-c74dc60161c7" >
-		<email:smtp-connection host="SOWEYLX06.sol.local"/>
+		<email:smtp-connection host="${smtp.host}" port="${smtp.port}"/>
 	</email:smtp-config>
 	<flow name="aviation-implementationFlow" doc:id="c763d341-59a7-4091-830f-72610f7c459f" > 
-		<sftp:listener doc:name="aviationFileListener" doc:id="04701c01-f855-490d-82fd-79258c1546ac" recursive="false" directory="${sftpdir.opayo.unprocessed}" moveToDirectory="#[vars.targetfolder]" config-ref="SFTP_Config" renameTo="#[(vars.dataEntityValue replace  /.xlsx/ with (&quot;&quot;)) ++ (now() as String {format: &quot;yyyyMMddHHmmss&quot;}) ++ '.xlsx']" outputMimeType='application/xlsx'>
+		<sftp:listener doc:name="aviationFileListener" doc:id="04701c01-f855-490d-82fd-79258c1546ac" recursive="false" directory="${sftpdir.aviation.unprocessed}" moveToDirectory="#[vars.targetfolder]" config-ref="SFTP_Config" renameTo="#[(vars.dataEntityValue replace  /.xlsx/ with (&quot;&quot;)) ++ '-' ++ (now() as String {format: &quot;yyyyMMddHHmmss&quot;}) ++ '.xlsx']" outputMimeType='application/xlsx'>
 			<reconnect frequency="${sftp.reconnectionfrequency}" count="${sftp.reconnectionattempts}" />
 			<scheduling-strategy>
-				<fixed-frequency frequency="${frequency.opayo}" timeUnit="SECONDS" />
+				<fixed-frequency frequency="${frequency.aviation}" timeUnit="SECONDS" />
 			</scheduling-strategy>
 			<sftp:matcher filenamePattern="${filepattern.aviation}" />
 		</sftp:listener>
@@ -56,7 +56,23 @@ uuid()]]></ee:set-variable>
 			
 </ee:variables>
 		</ee:transform>
-		<logger level="INFO" doc:name="logStart" doc:id="25983d95-8b9a-435e-a2ca-2487bdc499be" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;appName: app.Name,&#10;timestamp: now(),&#10;businessInterface: vars.interfaceID,&#10;flowName: flow.Name,&#10;messageId: vars.messageID,&#10;trackingId: vars.trackingID,&#10;correlationId: null,&#10;dataEntityName: vars.dataEntityName,&#10;dataEntityType: vars.dataEntityType,&#10;dataEntityValue: vars.dataEntityValue,&#10;dataSource: vars.dataSource,&#10;message: "Start of flow and message received from listener"&#10;}]' />
+		<logger level="INFO" doc:name="logStart" doc:id="25983d95-8b9a-435e-a2ca-2487bdc499be" message='#[%dw 2.0
+&#10;output application/json
+&#10;---
+&#10;{
+&#10;appName: app.Name,
+&#10;timestamp: now(),
+&#10;businessInterface: vars.interfaceID,
+&#10;flowName: flow.Name,
+&#10;messageId: vars.messageID,
+&#10;trackingId: vars.trackingID,
+&#10;correlationId: null,
+&#10;dataEntityName: vars.dataEntityName,
+&#10;dataEntityType: vars.dataEntityType,
+&#10;dataEntityValue: vars.dataEntityValue,
+&#10;dataSource: vars.dataSource,
+&#10;message: "Start of flow and message received from listener"
+&#10;}]' />
 		<try doc:name="Try" doc:id="aefba284-90f4-4f73-80f4-1103e182d51a" > 
 			<!-- <ee:transform doc:name="setRequest" doc:id="32ae43b1-45a7-43a3-8760-6986cc18a6b6">
 				<ee:message>
@@ -659,10 +675,15 @@ output application/json
 
  //substringBefore(vars.dataEntityValue, ".")
  vars.dataEntityValue replace  '.xlsx' with ""]]></ee:set-variable>
+					<ee:set-variable variableName="mailTo" ><![CDATA[%dw 2.0
+output application/java
+---
+p('mailto') splitBy ","]]></ee:set-variable>
 			</ee:variables>
 		
 </ee:transform>
-		<!-- <sftp:write doc:name="Write" doc:id="c8452d5f-c752-463e-a5fa-39c4f4f3e0dc" config-ref="SFTP_Config" path="/DEV/Test/RyanairInvoice.xml"/> -->
+		 <logger level="INFO" doc:name="Logger" doc:id="80a040a4-2280-463d-9f25-1ff85185c0d2" message="(((((((((()((#[vars.mailTo]))))))"/>
+			<sftp:write doc:name="Write" doc:id="c8452d5f-c752-463e-a5fa-39c4f4f3e0dc" config-ref="SFTP_Config" path="${sftpdir.aviation.xmlfile}"/> 
 			<!-- <ee:transform doc:name="filename" doc:id="c4e6dc99-5133-4cf1-a48b-744c9facbe8e" >
 				<ee:message >
 				</ee:message>
@@ -677,10 +698,8 @@ output application/json
 ]]></ee:set-variable>
 				</ee:variables>
 			</ee:transform> -->
-			<email:send doc:name="sendEmail" doc:id="eb0d9478-f0e3-42d9-8c0f-d9d7719b5e79" config-ref="Email_SMTP" fromAddress="Muthuraj.Pitchaiah@external.prax.com" subject="#[vars.dataEntityValue]">
-				<email:to-addresses >
-					<email:to-address value="Muthuraj.Pitchaiah@external.prax.com" />
-				</email:to-addresses>
+			<!-- <email:send doc:name="Send" toAddresses="#[p('mailto') splitBy(';')]" config-ref="Email_SMTP" /> -->
+			<email:send doc:name="sendEmail" doc:id="eb0d9478-f0e3-42d9-8c0f-d9d7719b5e79" config-ref="Email_SMTP" fromAddress="${mailfrom}" subject="#[vars.dataEntityValue]" toAddresses="#[vars.mailTo]">
 				<email:body contentType="text/plain" >
 					<email:content ><![CDATA[Email Content]]></email:content>
 				</email:body>
@@ -696,7 +715,7 @@ output application/json
 				<ee:message >
 				</ee:message>
 				<ee:variables >
-					<ee:set-variable variableName="targetfolder" ><![CDATA[p('sftpdir.opayo.processed')]]></ee:set-variable>
+					<ee:set-variable variableName="targetfolder" ><![CDATA[p('sftpdir.aviation.processed')]]></ee:set-variable>
 				</ee:variables>
 			</ee:transform>
 			<error-handler >
@@ -705,13 +724,29 @@ output application/json
 						<ee:message >
 						</ee:message>
 						<ee:variables >
-							<ee:set-variable variableName="targetfolder" ><![CDATA[p('sftpdir.opayo.error')]]></ee:set-variable>
+							<ee:set-variable variableName="targetfolder" ><![CDATA[p('sftpdir.aviation.error')]]></ee:set-variable>
 						</ee:variables>
 					</ee:transform>
 				</on-error-propagate>
 			</error-handler>
 		</try>
-		<logger level="INFO" doc:name="endLog" doc:id="50fae14a-a53f-4bf9-9ba5-01d6c79ec132" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;appName: app.Name,&#10;timestamp: now(),&#10;businessInterface: vars.interfaceID,&#10;flowName: flow.Name,&#10;messageId: vars.messageID,&#10;trackingId: vars.trackingID,&#10;correlationId: null,&#10;dataEntityName: vars.dataEntityName,&#10;dataEntityType: vars.dataEntityType,&#10;dataEntityValue: vars.dataEntityValue,&#10;dataSource: vars.dataSource,&#10;message: "End of flow and data set to caller successfully"&#10;}]'/>
+		<logger level="INFO" doc:name="endLog" doc:id="50fae14a-a53f-4bf9-9ba5-01d6c79ec132" message='#[%dw 2.0
+&#10;output application/json
+&#10;---
+&#10;{
+&#10;appName: app.Name,
+&#10;timestamp: now(),
+&#10;businessInterface: vars.interfaceID,
+&#10;flowName: flow.Name,
+&#10;messageId: vars.messageID,
+&#10;trackingId: vars.trackingID,
+&#10;correlationId: null,
+&#10;dataEntityName: vars.dataEntityName,
+&#10;dataEntityType: vars.dataEntityType,
+&#10;dataEntityValue: vars.dataEntityValue,
+&#10;dataSource: vars.dataSource,
+&#10;message: "End of flow and data set to caller successfully"
+&#10;}]'/>
 		<error-handler ref="global-exceptionError_Handler" />
 	</flow>
 </mule>
