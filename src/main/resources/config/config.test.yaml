@@ -37,13 +37,13 @@ smtp:
             
 sftpdir:          
   aviation:
-   unprocessed: "/RyanAir/Excel_To_XML/DEV"
-   processed: "/RyanAir/Excel_To_XML/DEV/processed"
-   error: "/RyanAir/Excel_To_XML/DEV/Error"
-   xmlfile: "/RyanAir/Excel_To_XML/DEV/RyanairInvoice.xml" 
+   unprocessed: "/RyanAir/Excel_To_XML/LOCAL"
+   processed: "/RyanAir/Excel_To_XML/LOCAL/processed"
+   error: "/RyanAir/Excel_To_XML/LOCAL/Error"
+   xmlfile: "/RyanAir/Excel_To_XML/LOCAL/RyanairInvoice.xml" 
 
 mailfrom: Aviation@prax.com
-mailto: Muthuraj.Pitchaiah@external.prax.com,Samir.Pipalia@external.prax.com
+mailto: Muthuraj.Pitchaiah@external.prax.com
 
   
 filepattern:

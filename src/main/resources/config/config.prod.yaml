@@ -41,7 +41,7 @@ sftpdir:
    xmlfile: "/RyanAir/Excel_To_XML/PROD/RyanairInvoice.xml" 
 
 mailfrom: Aviation@prax.com
-mailto: Muthuraj.Pitchaiah@external.prax.com,Samir.Pipalia@external.prax.com
+mailto: Muthuraj.Pitchaiah@external.prax.com,Samir.Pipalia@external.prax.com,Ian.Stanley@Harvestenergy.com
 
   
 filepattern:

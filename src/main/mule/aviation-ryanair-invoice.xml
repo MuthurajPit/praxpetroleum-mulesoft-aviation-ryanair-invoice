@@ -487,14 +487,14 @@ var paymentTermsDays = vars.finalHeaderDetails.PaymentTermsDays
 		},
 		Invoice: {
 			InvoiceHeader: {
-				CustomerEntityID: vars.finalHeaderDetails.AccountNumber as String,
+				CustomerEntityID: trim(vars.finalHeaderDetails.AccountNumber as String),
 				IssuingEntityID: "16406",
 				IssuingEntityName: "Harvest Energy Aviation Ltd",
 				IssuingEntityAffiliateName: "HARVESTINFO",
 				InvoiceNumber: vars.finalHeaderDetails.InvoiceNo as Number,
 				InvoiceIssueDate: vars.finalHeaderDetails.InvoiceDate as Date,
 				InvoiceType @(InvoiceTransactionType: "FI"): "INV",
-				InvoiceDeliveryLocation: "STN" as String,
+				InvoiceDeliveryLocation: trim(vars.finalHeaderDetails.AirportCode as String),
 				InvoiceDeliveryCountryCode: "GB" as String,
 				InvoicePaymentTermsType: paymentTermsDays as String, 
 				InvoicePaymentTermsDateBasis: "ID" as String,
@@ -504,7 +504,7 @@ var paymentTermsDays = vars.finalHeaderDetails.PaymentTermsDays
                 InvoicePaymentTermsDescription: "NET " ++ paymentTermsDays as Number as String ++" CALENDAR DAYS" as String,
 				InvoiceReferenceValue @(InvoiceReferenceType: "CTN" as String): "10324820" as String,
 				TaxInvoiceNumber: vars.finalHeaderDetails.InvoiceNo as Number,
-				InvoiceCurrencyCode: vars.finalHeaderDetails.Currency as String,
+				InvoiceCurrencyCode: trim(vars.finalHeaderDetails.Currency as String),
 				InvoiceTotalAmount: vars.finalHeaderDetails.TotalInvoice as Number as String {format: "0.00"},
 				InvoiceDiscountAmount: "0.00" as String
 			},			
@@ -519,10 +519,10 @@ var paymentTermsDays = vars.finalHeaderDetails.PaymentTermsDays
 							ItemQuantityQty: payload01."Volume (LT)" as Number as String {format: "00000000000.000000"},
 							ItemQuantityUOM: "LT" as String
 						},
-						ItemDeliveryReferenceValue @(ItemDeliveryReferenceType: "FNO"): payload01."Flight Number",
-						ItemDeliveryReferenceValue @(ItemDeliveryReferenceType: "DTN"): payload01."Destination",
-                        ItemDeliveryReferenceValue @(ItemDeliveryReferenceType: "ARN"): payload01."Aircraft Reg No",
-						ItemDeliveryLocation: vars.finalHeaderDetails.AirportCode as String,
+						ItemDeliveryReferenceValue @(ItemDeliveryReferenceType: "FNO"): trim(payload01."Flight Number"),
+						ItemDeliveryReferenceValue @(ItemDeliveryReferenceType: "DTN"): trim(payload01."Destination"),
+                        ItemDeliveryReferenceValue @(ItemDeliveryReferenceType: "ARN"): trim(payload01."Aircraft Reg No"),
+						ItemDeliveryLocation: trim(vars.finalHeaderDetails.AirportCode as String),
 						ItemTransportation @(ItemTransportationType: "IP"): {
 							ItemTransportationAmount: 0.00 as Number as String {format: "0.00"}
 						},
